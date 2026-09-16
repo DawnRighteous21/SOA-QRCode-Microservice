@@ -66,6 +66,16 @@
         .status-success { background: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
         .status-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
         .raw-link { word-break: break-all; font-size: 11px; color: var(--text-muted); margin-top: 14px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); }
+
+        /* Data Table Styles */
+        .log-container { display: none; margin-top: 24px; background: var(--bg-inner); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .log-container.active { display: block; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .data-table th { background: #0f172a; color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: #e2e8f0; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .device-cell { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
@@ -92,7 +102,7 @@
             <div class="panel-header">
                 <div>
                     <h2>Event Check-In Service</h2>
-                    <p>Stateful, Single-Entry Verification with Real-Time Polling</p>
+                    <p>Stateful Broadcast Verification with Live Attendee Counter</p>
                 </div>
                 <span class="tech-pill" style="background:#f59e0b22; color:#f59e0b; border:1px solid #f59e0b44;">Stateful / In-Memory</span>
             </div>
@@ -104,23 +114,45 @@
                         <input type="text" id="eventName" value="SOA Architecture Seminar 2026" readonly>
                     </div>
 
-                    <div class="control-group" style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-                        <input type="checkbox" id="autoAdvanceQueue" checked style="width: 16px; height: 16px; cursor: pointer;">
-                        <label for="autoAdvanceQueue" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Kiosk Mode (Auto-Generate Next)</label>
+                    <div class="control-group">
+                        <label>Session Window Duration</label>
+                        <select id="eventDuration">
+                            <option value="30">Closes in 30 Seconds</option>
+                            <option value="60">Closes in 60 Seconds</option>
+                            <option value="-1">Infinite (Manual Close)</option>
+                        </select>
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="action-btn" style="flex: 2; margin-top: 0;" onclick="generateCheckin()">Start Kiosk</button>
+                        <button class="action-btn" style="flex: 2; margin-top: 0;" onclick="generateCheckin()">Broadcast Check-In QR</button>
                         <button class="action-btn" style="flex: 1; margin-top: 0; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="resetQueue()">Reset</button>
                     </div>
 
+                    <button class="action-btn" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted);" onclick="toggleLogs()">View Live Attendee Log</button>
+
                     <div style="margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
-                        <strong>Workflow:</strong> Implements Device Fingerprinting. If a smartphone successfully scans a session, that physical device is blocked from scanning any subsequent check-in codes to prevent passback loops.
+                        <strong>Workflow:</strong> Implements Session Time-to-Live (TTL). When the timer expires, the backend hard-rejects further scans, and the UI dynamically blurs to prevent user confusion.
                     </div>
                 </div>
                 <div class="preview-box" id="eventPreview">
-                    <span style="color:var(--text-muted); font-size:13px;">Click Start to begin session</span>
+                    <span style="color:var(--text-muted); font-size:13px;">Click Broadcast to begin event session</span>
                 </div>
+            </div>
+
+            <!-- Live Logs Table -->
+            <div id="logSection" class="log-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp (UTC)</th>
+                            <th>Network IP</th>
+                            <th>Device Fingerprint (User-Agent)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody">
+                        <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No attendees recorded yet.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -129,16 +161,16 @@
             <div class="panel-header">
                 <div>
                     <h2>Digital Ticket Service</h2>
-                    <p>Stateless Cryptographic Signature Verification (HMAC-SHA256)</p>
+                    <p>Single-Use Cryptographic Tickets (HMAC-SHA256)</p>
                 </div>
-                <span class="tech-pill" style="background:#38bdf822; color:#38bdf8; border:1px solid #38bdf844;">Stateless / HMAC Cryptography</span>
+                <span class="tech-pill" style="background:#f59e0b22; color:#f59e0b; border:1px solid #f59e0b44;">Stateful / Single-Use</span>
             </div>
             <div class="generator-grid">
                 <div class="control-box">
                     <h3>Ticket Specifications</h3>
                     <div class="control-group">
                         <label>Attendee Name</label>
-                        <input type="text" id="ticketAttendee" value="Tran Quang Duy">
+                        <input type="text" id="ticketAttendee" value="John Doe">
                     </div>
                     <div class="control-group">
                         <label>Ticket Tier</label>
@@ -148,7 +180,7 @@
                             <option value="SPEAKER-PASS">Faculty & Speaker</option>
                         </select>
                     </div>
-                    <!-- NEW EXPIRES IN DEMO CONTROL -->
+
                     <div class="control-group">
                         <label>Validity Duration (Demo Time-To-Live)</label>
                         <select id="ticketExpiration">
@@ -164,7 +196,7 @@
                     </div>
 
                     <div style="margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
-                        <strong>Security Principle:</strong> Ticket payload is cryptographically signed using a private server secret. Any tampering with the QR URL payload, including expiration dates, immediately triggers an alert.
+                        <strong>Security Principle:</strong> Ticket payload is cryptographically signed using a private server secret. Once scanned and verified, the ticket ID is logged in the server's database to explicitly prevent reuse or passback attacks.
                     </div>
                 </div>
                 <div class="preview-box" id="ticketPreview">
@@ -222,45 +254,90 @@
         }
 
         let pollInterval = null;
-        let autoAdvanceTimer = null;
+        let currentEventId = null;
 
         async function resetQueue() {
             await fetch('/api/checkin/reset', { method: 'POST' });
             if (pollInterval) clearInterval(pollInterval);
-            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
-            document.getElementById('eventPreview').innerHTML = `<span style="color:var(--text-muted); font-size:13px;">Queue and Device Trackers Reset.<br><br>Click Start to begin.</span>`;
+            currentEventId = null;
+            document.getElementById('eventPreview').innerHTML = `<span style="color:var(--text-muted); font-size:13px;">Active Events and Device Trackers Reset.<br><br>Click Broadcast to begin.</span>`;
+            document.getElementById('logTableBody').innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No attendees recorded yet.</td></tr>`;
+        }
+
+        function toggleLogs() {
+            const section = document.getElementById('logSection');
+            section.classList.toggle('active');
+            if(section.classList.contains('active') && currentEventId) {
+                fetchLogs();
+            }
+        }
+
+        async function fetchLogs() {
+            if (!currentEventId) return;
+            const res = await fetch(`/api/checkin/attendees/${currentEventId}`);
+            if (res.ok) {
+                const attendees = await res.json();
+                const tbody = document.getElementById('logTableBody');
+
+                if (attendees.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No attendees recorded yet.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = attendees.map(a => `
+                    <tr>
+                        <td><span style="color: var(--accent); font-weight: 600;">${a.timestamp}</span></td>
+                        <td>${a.ipAddress}</td>
+                        <td class="device-cell" title="${a.device}">${a.device}</td>
+                    </tr>
+                `).join('');
+            }
         }
 
         async function generateCheckin() {
             if (pollInterval) clearInterval(pollInterval);
-            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
 
             const baseUrl = getBaseUrl();
-            const res = await fetch(`/api/checkin/create?baseUrl=${encodeURIComponent(baseUrl)}`);
+            const duration = document.getElementById('eventDuration').value;
+            const res = await fetch(`/api/checkin/create?baseUrl=${encodeURIComponent(baseUrl)}&duration=${duration}`);
             const data = await res.json();
+
+            currentEventId = data.eventId;
 
             const preview = document.getElementById('eventPreview');
             preview.innerHTML = `
-                <div class='qr-frame'><img src='data:image/png;base64,${data.qrBase64}' /></div>
-                <div id='pollStatus' class='status-badge status-waiting'>STATUS: WAITING FOR SCAN</div>
-                <div class='raw-link'>Session: ${data.checkinId}</div>
+                <div class='qr-frame' style='position:relative; overflow:hidden;'>
+                    <img id='eventQrImg' src='data:image/png;base64,${data.qrBase64}' style='transition: filter 0.3s;' />
+                    <div id='eventQrOverlay' style='display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(11, 15, 25, 0.85); flex-direction:column; justify-content:center; align-items:center; border-radius:10px;'>
+                        <span style='color:#ef4444; font-weight:800; font-size:18px; text-align:center;'>SESSION<br>CLOSED</span>
+                        <button onclick='generateCheckin()' style='margin-top:12px; padding:6px 12px; background:#1e293b; border:1px solid #ef4444; color:#ef4444; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;'>REOPEN QUEUE</button>
+                    </div>
+                </div>
+                <div id='pollStatus' class='status-badge status-waiting'>WAITING FOR SCANS</div>
+                <div class='raw-link'>Event Session: ${data.eventId}</div>
             `;
 
+            document.getElementById('logTableBody').innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No attendees recorded yet.</td></tr>`;
+
             pollInterval = setInterval(async () => {
-                const checkRes = await fetch(`/checkin/status/${data.checkinId}`);
+                const checkRes = await fetch(`/checkin/status/${currentEventId}`);
                 if (checkRes.ok) {
                     const statusData = await checkRes.json();
-                    if (statusData.status === 'Checked-In') {
+                    const statusBadge = document.getElementById('pollStatus');
+
+                    if (statusData.isExpired) {
                         clearInterval(pollInterval);
-                        const statusBadge = document.getElementById('pollStatus');
+                        document.getElementById('eventQrImg').style.filter = "blur(4px)";
+                        document.getElementById('eventQrOverlay').style.display = "flex";
+                        statusBadge.className = 'status-badge status-danger';
+                        statusBadge.innerText = 'REGISTRATION CLOSED';
+                    } else if (statusData.count > 0) {
                         statusBadge.className = 'status-badge status-success';
-                        const autoAdvance = document.getElementById('autoAdvanceQueue').checked;
-                        if (autoAdvance) {
-                            statusBadge.innerText = 'VERIFIED! GENERATING NEXT...';
-                            autoAdvanceTimer = setTimeout(() => { generateCheckin(); }, 2500);
-                        } else {
-                            statusBadge.innerText = 'STATUS: CHECKED-IN (VERIFIED)';
-                        }
+                        statusBadge.innerText = `ATTENDEES VERIFIED: ${statusData.count}`;
+                    }
+
+                    if (document.getElementById('logSection').classList.contains('active')) {
+                        fetchLogs();
                     }
                 }
             }, 1500);

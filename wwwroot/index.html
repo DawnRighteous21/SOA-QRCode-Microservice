@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOA QR Architecture Hub</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #131b2e;
+            --bg-inner: #070a12;
+            --border: #1e293b;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 32px 20px; }
+        .container { max-width: 1080px; margin: 0 auto; }
+
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+        .brand p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+        .ngrok-config { display: flex; align-items: center; gap: 10px; background: var(--bg-card); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); }
+        .ngrok-config label { font-size: 12px; font-weight: 600; color: var(--accent); }
+        .ngrok-config input[type="text"] { background: var(--bg-inner); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 260px; outline: none; }
+        .ngrok-config input[type="text"]:focus { border-color: var(--accent); }
+
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tab-btn:hover { color: #fff; background: var(--border); }
+        .tab-btn.active { color: #fff; background: var(--accent-glow); border: 1px solid var(--accent); }
+
+        /* Card Section */
+        .view-panel { display: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); }
+        .view-panel.active { display: block; }
+        .panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .panel-header h2 { font-size: 20px; font-weight: 700; }
+        .panel-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+        .tech-pill { font-size: 11px; padding: 4px 10px; border-radius: 9999px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Generator Layout */
+        .generator-grid { display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+        @media (max-width: 800px) { .generator-grid { grid-template-columns: 1fr; } }
+
+        .control-box { background: var(--bg-inner); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .control-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-main); }
+        .control-group { margin-bottom: 16px; }
+        .control-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        .control-group input[type="text"], .control-group select { width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+        .action-btn { width: 100%; background: var(--accent); color: #0b0f19; font-weight: 700; border: none; padding: 12px; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
+        .action-btn:hover { opacity: 0.9; }
+
+        /* Output Column */
+        .preview-box { background: var(--bg-inner); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-align: center; min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .qr-frame { background: #fff; padding: 12px; border-radius: 10px; display: inline-block; margin-bottom: 18px; }
+        .qr-frame img { display: block; width: 200px; height: 200px; }
+        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .status-waiting { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .status-success { background: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+        .status-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .raw-link { word-break: break-all; font-size: 11px; color: var(--text-muted); margin-top: 14px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <h1>SOA Architecture Verification Hub</h1>
+                <p>Enterprise Service-Oriented Demonstration Dashboard</p>
+            </div>
+            <div class="ngrok-config">
+                <label for="ngrokInput">PUBLIC GATEWAY:</label>
+                <input type="text" id="ngrokInput" placeholder="https://xxxx.ngrok-free.app">
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab('event')">1. Event Check-in</button>
+            <button class="tab-btn" onclick="switchTab('ticket')">2. Digital Tickets (HMAC)</button>
+            <button class="tab-btn" onclick="switchTab('product')">3. Product Catalog</button>
+        </nav>
+
+        <!-- PANEL 1: EVENT CHECK-IN -->
+        <section id="panel-event" class="view-panel active">
+            <div class="panel-header">
+                <div>
+                    <h2>Event Check-In Service</h2>
+                    <p>Stateful, Single-Entry Verification with Real-Time Polling</p>
+                </div>
+                <span class="tech-pill" style="background:#f59e0b22; color:#f59e0b; border:1px solid #f59e0b44;">Stateful / In-Memory</span>
+            </div>
+            <div class="generator-grid">
+                <div class="control-box">
+                    <h3>Configuration</h3>
+                    <div class="control-group">
+                        <label>Attendance Session</label>
+                        <input type="text" id="eventName" value="SOA Architecture Seminar 2026" readonly>
+                    </div>
+
+                    <div class="control-group" style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                        <input type="checkbox" id="autoAdvanceQueue" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="autoAdvanceQueue" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Kiosk Mode (Auto-Generate Next)</label>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="action-btn" style="flex: 2; margin-top: 0;" onclick="generateCheckin()">Start Kiosk</button>
+                        <button class="action-btn" style="flex: 1; margin-top: 0; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="resetQueue()">Reset</button>
+                    </div>
+
+                    <div style="margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
+                        <strong>Workflow:</strong> Implements Device Fingerprinting. If a smartphone successfully scans a session, that physical device is blocked from scanning any subsequent check-in codes to prevent passback loops.
+                    </div>
+                </div>
+                <div class="preview-box" id="eventPreview">
+                    <span style="color:var(--text-muted); font-size:13px;">Click Start to begin session</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL 2: DIGITAL TICKET -->
+        <section id="panel-ticket" class="view-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Digital Ticket Service</h2>
+                    <p>Stateless Cryptographic Signature Verification (HMAC-SHA256)</p>
+                </div>
+                <span class="tech-pill" style="background:#38bdf822; color:#38bdf8; border:1px solid #38bdf844;">Stateless / HMAC Cryptography</span>
+            </div>
+            <div class="generator-grid">
+                <div class="control-box">
+                    <h3>Ticket Specifications</h3>
+                    <div class="control-group">
+                        <label>Attendee Name</label>
+                        <input type="text" id="ticketAttendee" value="Tran Quang Duy">
+                    </div>
+                    <div class="control-group">
+                        <label>Ticket Tier</label>
+                        <select id="ticketTier">
+                            <option value="VIP-PREMIUM">VIP All-Access</option>
+                            <option value="GENERAL-PASS">General Admission</option>
+                            <option value="SPEAKER-PASS">Faculty & Speaker</option>
+                        </select>
+                    </div>
+                    <!-- NEW EXPIRES IN DEMO CONTROL -->
+                    <div class="control-group">
+                        <label>Validity Duration (Demo Time-To-Live)</label>
+                        <select id="ticketExpiration">
+                            <option value="86400">Valid for 24 Hours</option>
+                            <option value="10">Expires in 10 Seconds (Live Demo)</option>
+                            <option value="-1">Already Expired (Simulate Old Ticket)</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="action-btn" style="flex: 2; margin-top: 0;" onclick="generateTicket(false)">Issue Authentic Ticket</button>
+                        <button class="action-btn" style="flex: 1; margin-top: 0; background: transparent; border: 1px solid var(--danger); color: var(--danger);" onclick="generateTicket(true)">Forged Demo</button>
+                    </div>
+
+                    <div style="margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
+                        <strong>Security Principle:</strong> Ticket payload is cryptographically signed using a private server secret. Any tampering with the QR URL payload, including expiration dates, immediately triggers an alert.
+                    </div>
+                </div>
+                <div class="preview-box" id="ticketPreview">
+                    <span style="color:var(--text-muted); font-size:13px;">Select an issuance type to create a ticket</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL 3: PRODUCT CATALOG -->
+        <section id="panel-product" class="view-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Product QR Service</h2>
+                    <p>Stateless, Multi-Use Canonical Routing</p>
+                </div>
+                <span class="tech-pill" style="background:#22c55e22; color:#22c55e; border:1px solid #22c55e44;">Stateless / Multi-Use</span>
+            </div>
+            <div class="generator-grid">
+                <div class="control-box">
+                    <h3>Select Product</h3>
+                    <div class="control-group">
+                        <label>Product Reference</label>
+                        <select id="productIdSelect">
+                            <option value="PROD-001">SteelSeries Arctis 5 Headset</option>
+                            <option value="PROD-002">Keychron Q1 Pro Keyboard</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" onclick="generateProduct()">Generate Product QR</button>
+                    <div style="margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
+                        <strong>Enterprise Concept:</strong> Decouples physical items from backend databases. Multiple scans can happen concurrently without altering server state.
+                    </div>
+                </div>
+                <div class="preview-box" id="productPreview">
+                    <span style="color:var(--text-muted); font-size:13px;">Click Generate to create product tag</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const ngrokInput = document.getElementById('ngrokInput');
+        ngrokInput.value = localStorage.getItem('soa_ngrok_url') || window.location.origin;
+        ngrokInput.addEventListener('input', (e) => localStorage.setItem('soa_ngrok_url', e.target.value.trim()));
+
+        function getBaseUrl() {
+            let val = ngrokInput.value.trim();
+            return val.replace(/\/+$/, '');
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`panel-${name}`).classList.add('active');
+        }
+
+        let pollInterval = null;
+        let autoAdvanceTimer = null;
+
+        async function resetQueue() {
+            await fetch('/api/checkin/reset', { method: 'POST' });
+            if (pollInterval) clearInterval(pollInterval);
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            document.getElementById('eventPreview').innerHTML = `<span style="color:var(--text-muted); font-size:13px;">Queue and Device Trackers Reset.<br><br>Click Start to begin.</span>`;
+        }
+
+        async function generateCheckin() {
+            if (pollInterval) clearInterval(pollInterval);
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+
+            const baseUrl = getBaseUrl();
+            const res = await fetch(`/api/checkin/create?baseUrl=${encodeURIComponent(baseUrl)}`);
+            const data = await res.json();
+
+            const preview = document.getElementById('eventPreview');
+            preview.innerHTML = `
+                <div class='qr-frame'><img src='data:image/png;base64,${data.qrBase64}' /></div>
+                <div id='pollStatus' class='status-badge status-waiting'>STATUS: WAITING FOR SCAN</div>
+                <div class='raw-link'>Session: ${data.checkinId}</div>
+            `;
+
+            pollInterval = setInterval(async () => {
+                const checkRes = await fetch(`/checkin/status/${data.checkinId}`);
+                if (checkRes.ok) {
+                    const statusData = await checkRes.json();
+                    if (statusData.status === 'Checked-In') {
+                        clearInterval(pollInterval);
+                        const statusBadge = document.getElementById('pollStatus');
+                        statusBadge.className = 'status-badge status-success';
+                        const autoAdvance = document.getElementById('autoAdvanceQueue').checked;
+                        if (autoAdvance) {
+                            statusBadge.innerText = 'VERIFIED! GENERATING NEXT...';
+                            autoAdvanceTimer = setTimeout(() => { generateCheckin(); }, 2500);
+                        } else {
+                            statusBadge.innerText = 'STATUS: CHECKED-IN (VERIFIED)';
+                        }
+                    }
+                }
+            }, 1500);
+        }
+
+        async function generateTicket(isForged) {
+            const baseUrl = getBaseUrl();
+            const attendee = document.getElementById('ticketAttendee').value;
+            const tier = document.getElementById('ticketTier').value;
+            const expiresIn = document.getElementById('ticketExpiration').value;
+
+            const res = await fetch(`/api/ticket/create?baseUrl=${encodeURIComponent(baseUrl)}&attendee=${encodeURIComponent(attendee)}&tier=${encodeURIComponent(tier)}&forged=${isForged}&expiresIn=${expiresIn}`);
+            const data = await res.json();
+
+            const preview = document.getElementById('ticketPreview');
+            const badgeClass = isForged ? 'status-badge status-danger' : 'status-badge status-success';
+            const badgeText = isForged ? 'TAMPERED PAYLOAD GENERATED' : 'HMAC-SHA256 SIGNED';
+
+            preview.innerHTML = `
+                <div class='qr-frame'><img src='data:image/png;base64,${data.qrBase64}' /></div>
+                <div class='${badgeClass}'>${badgeText}</div>
+                <div class='raw-link' style='text-align:left;'>
+                    <strong>Ticket ID:</strong> ${data.ticketId}<br>
+                    <strong>Attendee:</strong> ${data.attendee}<br>
+                    <strong>Signature:</strong> ${data.signature.substring(0, 16)}...
+                </div>
+            `;
+        }
+
+        async function generateProduct() {
+            const baseUrl = getBaseUrl();
+            const prodId = document.getElementById('productIdSelect').value;
+            const res = await fetch(`/api/product/create?baseUrl=${encodeURIComponent(baseUrl)}&productId=${encodeURIComponent(prodId)}`);
+            const data = await res.json();
+            const preview = document.getElementById('productPreview');
+            preview.innerHTML = `
+                <div class='qr-frame'><img src='data:image/png;base64,${data.qrBase64}' /></div>
+                <div class='status-badge status-success'>ACTIVE CATALOG ITEM</div>
+                <div class='raw-link'>
+                    <strong>${data.productName}</strong><br>
+                    Identifier: ${data.productId}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -35,7 +35,20 @@ This service is highly applicable to other university semester projects (Web Dev
 5. Access the **SOA Verification Dashboard** at: `http://localhost:5077`
 6. Access the **Swagger UI** for interactive API documentation at: `http://localhost:5077/swagger`
 
-## 5. Core API Endpoints
+## 5. Exposing to the Internet (Required for Mobile Scanning)
+Since QR codes are designed to be scanned by external mobile devices, the local server must be exposed to the internet. We recommend using `ngrok` for this purpose.
+
+1. Download and install [ngrok](https://ngrok.com/download).
+2. While the `.NET` server is running on port `5077`, open a new terminal and start an ngrok tunnel:
+   ```bash
+   ngrok http 5077
+   ```
+
+3. Copy the generated `Forwarding` URL (e.g., `https://xxxx.ngrok-free.app`).
+4. Open the SOA Verification Dashboard (`http://localhost:5077`) in your browser.
+5. Paste the ngrok URL into the **PUBLIC GATEWAY** field at the top right of the screen. All subsequently generated QR codes will now contain public internet links accessible by any smartphone.
+
+## 6. Core API Endpoints
 
 *Note: All generation endpoints return a JSON object containing the `qrBase64` image string alongside necessary metadata.*
 
@@ -46,7 +59,7 @@ Issues a secure HMAC-SHA256 signed digital ticket. Accepts `attendee` and `tier`
 * `GET /api/product/create`
 Generates a stateless multi-use product tag linked to a specific physical asset.
 
-## 6. Microservice Integration Strategy
+## 7. Microservice Integration Strategy
 
 To integrate this QR service into a larger ecosystem (such as a Spring Boot e-commerce backend or a Python ticket booking system):
 

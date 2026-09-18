@@ -55,5 +55,4 @@ To integrate this QR service into a larger ecosystem (such as a Spring Boot e-co
 3. **Rendering:** The main application saves the `ticketId` to its internal database, then injects the `qrBase64` string directly into an HTML `<img>` tag or an email template for the end-user.
 4. **Verification:** When a user scans the printed QR code with their mobile device, the request is routed directly to the Microservice's Verification Node, bypassing the main booking system entirely to validate the cryptographic signature.
 
-```
 

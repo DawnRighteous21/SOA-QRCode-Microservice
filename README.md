@@ -1,59 +1,60 @@
-# QR Code Generation & Scanning Microservice
+# SOA QR Code Generation & Verification Microservice
 
 **Course:** KTHDV (Service-Oriented Architecture) - Mid-Semester Project
 **Group:** 7
 **Group Code:** SOA.26-7
 
-This repository contains a stateless C# Web API microservice dedicated to generating and decoding QR codes. The project architecture and implementation details are fully documented within the source codebase.
+This repository contains a stateless/stateful C# Minimal API microservice dedicated to generating and verifying QR codes. It is designed to act as an independent node in a Service-Oriented Architecture (SOA), decoupling physical-to-digital verification logic from core business applications.
 
-## 1. Business Value & Project Applicability
-This microservice bridges the physical and digital worlds by allowing systems to encode data into scannable formats and extract data from physical images. Because it is designed as a stateless API, it does not require an internal database. It takes data in and passes an image out, or takes an image in and passes data out. 
+## 1. Business Value (What problem does it solve?)
+This microservice acts as a centralized engine for QR rendering and cryptographic validation. 
+* **Decoupling:** Frontend and Backend teams do not need to implement complex QR generation or cryptographic signature (HMAC-SHA256) algorithms in their core codebases.
+* **Interoperability:** Any system (e.g., Spring Boot, Python Flask, Node.js) can integrate with it seamlessly via standard HTTP requests and JSON payloads.
+* **Centralized Security:** Prevents ticket forgery and duplicate check-ins at the architectural level rather than the application level.
 
-This microservice is highly applicable to other university semester projects (e.g., Web Development, Mobile Programming, E-Commerce systems) that require physical verification without the overhead of building native QR processing logic from scratch.
-
-## 2. Core Use Cases
-*   **Product QR:** Retail and inventory systems can generate QR codes encoding product IDs, manufacturing dates, or serialized JSON payloads for immediate scanning in warehouses.
-*   **Event Check-in:** Event management platforms can scan attendee QR codes at the door, extracting a unique registration hash to verify against a master database.
-*   **Digital Tickets:** Booking systems can generate secure, scannable QR tickets for transportation, cinema, or concerts, embedding seat numbers and transaction IDs.
+## 2. Core Use Cases & Applicability
+This service is highly applicable to other university semester projects (Web Development, Mobile Programming, E-Commerce) that require physical verification:
+* **Event Check-in (Stateful / TTL):** Broadcasts a QR code with a Time-To-Live. Mobile scanners hit the verify endpoint to record attendance based on device fingerprinting.
+* **Digital Tickets (Stateful / Single-Use):** Issues secure, HMAC-SHA256 signed tickets for booking systems. Scanned tickets are tracked in a concurrent dictionary and burned upon use to prevent passback attacks.
+* **Product QR (Stateless / Multi-use):** Generates canonical routing tags for physical products, decoupling inventory systems from the scanning interfaces.
 
 ## 3. Technology Stack
-The microservice is built for high compatibility and cross-platform execution:
-*   **Framework:** ASP.NET Core Minimal API targeting `.NET 10.0`.
-*   **QR Generation:** `QRCoder` (v1.8.0) is utilized to generate the raw QR matrices.
-*   **QR Scanning:** `ZXing.Net` (v0.16.11) paired with `ZXing.Net.Bindings.ImageSharp.V2` (v0.16.20) handles cross-platform image decoding without relying on native Windows libraries (like `System.Drawing`).
-*   **Documentation & Testing:** `Swashbuckle.AspNetCore` (v10.2.3) automatically generates a Swagger UI environment.
+* **Framework:** ASP.NET Core Minimal API targeting `.NET 10.0`.
+* **QR Processing:** `QRCoder` (v1.8.0) for generation and `ZXing.Net` for cross-platform image decoding.
+* **Documentation:** `Swashbuckle.AspNetCore` for automated OpenAPI/Swagger UI generation.
 
-## 4. How to Run Locally
-1. Ensure the .NET 10 SDK is installed on your machine.
-2. Clone this repository and navigate to the `QRCodeApi` directory.
-3. Run the following command in your terminal:
+## 4. How to Run Locally & Test
+1. Ensure the .NET 10 SDK is installed.
+2. Clone this repository and navigate to the project directory.
+3. Run the application:
    ```bash
    dotnet run
-   ```
-4. By default, the application will launch and listen on `http://localhost:5077` (and `https://localhost:7251`).
-5. To test the API endpoints interactively, open a browser and navigate to:
-   ```
-   http://localhost:5077/swagger
-   ```
 
-## 5. API Endpoints
-The microservice exposes two primary endpoints registered directly on the `WebApplication` builder.
+```
 
-### `POST /generate`
-Generates a QR code image from a given text payload.
-*   **Input:** A plain JSON string payload provided in the request body (`[FromBody]`).
-*   **Processing:** Generates a QR code utilizing Medium Error Correction (`ECCLevel.M`), which allows up to 15% of the code to be restored if damaged or dirty. 
-*   **Output:** Returns a fully rendered `image/png` file constructed from a `PngByteQRCode` graphic array.
+4. The service will listen on port `5077`.
+5. Access the **SOA Verification Dashboard** at: `http://localhost:5077`
+6. Access the **Swagger UI** for interactive API documentation at: `http://localhost:5077/swagger`
 
-### `POST /scan`
-Reads an uploaded QR code image and extracts the encoded text.
-*   **Input:** An uploaded image file (`IFormFile`).
-*   **Processing:** Loads the image stream asynchronously as an `Rgba32` pixel format and processes it through a stateless `BarcodeReader`. Antiforgery validation is explicitly disabled (`.DisableAntiforgery()`) on this endpoint to allow seamless requests from external microservices.
-*   **Output:** Returns a JSON object containing the `decodedText`. 
+## 5. Core API Endpoints
+
+*Note: All generation endpoints return a JSON object containing the `qrBase64` image string alongside necessary metadata.*
+
+* `GET /api/checkin/create`
+Generates a stateful broadcast Event Check-In QR code with a customizable expiration timer.
+* `GET /api/ticket/create`
+Issues a secure HMAC-SHA256 signed digital ticket. Accepts `attendee` and `tier` query parameters.
+* `GET /api/product/create`
+Generates a stateless multi-use product tag linked to a specific physical asset.
 
 ## 6. Microservice Integration Strategy
-To integrate this service into a larger system (such as a Spring Boot application or an ASP.NET Core monolith):
-1.  **Deployment:** Host this API in a Docker container or a distinct local port (e.g., 5077).
-2.  **Cross-Service Communication:** Whenever your main application needs to issue a digital ticket, it sends an HTTP POST request containing the ticket data to `http://<qr-service-ip>:5077/generate`.
-3.  **Consumption:** Your main application receives the raw PNG byte array and can then save it to an S3 bucket, attach it to a Brevo email API workflow, or render it directly on a frontend application. 
-4.  **Verification:** When a scanner application (like a mobile app) captures a QR image, it forwards the image file directly to the `/scan` endpoint, retrieves the parsed text, and passes that text back to your main database for authorization.
+
+To integrate this QR service into a larger ecosystem (such as a Spring Boot e-commerce backend or a Python ticket booking system):
+
+1. **Cross-Service Call:** When your main application needs to issue a ticket, it initiates an HTTP GET request to `http://<qr-service-ip>:5077/api/ticket/create?attendee=JohnDoe&tier=VIP`.
+2. **Consumption:** Your main application receives the JSON response containing the `ticketId`, `signature`, and raw `qrBase64` image string.
+3. **Rendering:** The main application saves the `ticketId` to its internal database, then injects the `qrBase64` string directly into an HTML `<img>` tag or an email template for the end-user.
+4. **Verification:** When a user scans the printed QR code with their mobile device, the request is routed directly to the Microservice's Verification Node, bypassing the main booking system entirely to validate the cryptographic signature.
+
+```
+

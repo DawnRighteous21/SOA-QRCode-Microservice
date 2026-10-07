@@ -240,6 +240,11 @@ app.MapGet("/checkin/status/{id}", (string id) =>
 
 app.MapGet("/api/ticket/create", ([FromQuery] string baseUrl, [FromQuery] string attendee, [FromQuery] string tier, [FromQuery] bool forged = false, [FromQuery] int expiresIn = 86400) =>
 {
+    Console.WriteLine($"\n[INBOUND REQUEST] {DateTime.Now:T} - Digital Ticket Creation (HMAC-SHA256)");
+    Console.WriteLine($"  ├─ Attendee: {attendee}");
+    Console.WriteLine($"  ├─ Tier:    {tier}");
+    Console.WriteLine($"  └─ Status: {(forged ? "Forged Ticket" : "Valid Ticket")}");
+
     string ticketId = $"TKT-{Guid.NewGuid().ToString()[..8].ToUpper()}";
     long expiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn).ToUnixTimeSeconds();
 
